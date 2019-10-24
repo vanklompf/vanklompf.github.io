@@ -20,7 +20,7 @@ I started it as learning opportunity for training myself in writing communicatio
 Topics will mostly cover C++ and modern server systems performance. But it can go in any direction following my "flaovur of the month" technology.
 
 ### Name
-So what is whit the name? 
+So what is with the name? 
 <blockquote class="twitter-tweet"><p lang="en" dir="ltr">There are 2 hard problems in computer science: cache invalidation, naming things, and off-by-1 errors.</p>&mdash; Leon &quot;Zero-Width-Space-Character&quot; Bambrick (@secretGeek) <a href="https://twitter.com/secretGeek/status/7269997868?ref_src=twsrc%5Etfw">January 1, 2010</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 It turns out that naming things is really difficult indeed. To cut things short I have selected title of one of my favourite books by polish science-fiction writer [Jacek Dukaj](https://en.wikipedia.org/wiki/Jacek_Dukaj). 
 <p align="center">
@@ -29,4 +29,4 @@ It turns out that naming things is really difficult indeed. To cut things short 
 
 
 
-Unfortunatelly [Extensa](https://www.goodreads.com/book/show/1451627.Extensa) is not yet translated to english.
+Unfortunatelly [Extensa](https://www.goodreads.com/book/show/1451627.Extensa) is not yet translated into english.

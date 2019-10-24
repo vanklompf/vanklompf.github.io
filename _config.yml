@@ -17,7 +17,7 @@ title: Extensa
 email:
 description: >- # this means to ignore newlines until "baseurl:"
   High Performance C++ Programming (among other stuff)
-twitter_username: username
+twitter_username: #username
 github_username: vanklompf
 minimal_mistakes_skin: default
 search: true
@@ -59,7 +59,7 @@ plugins:
 author:
   name   : "Franek Korta"
   avatar : "https://avatars1.githubusercontent.com/u/6758662?s=400&u=07d56e5cdd0bd7e7f667fc558120e51e9d552301&v=4"
-  bio    : "My awesome biography constrained to a sentence or two goes here."
+  bio    : "C++ developer with bias for performance"
   links:
 #    - label: "Website"
 #      icon: "fas fa-fw fa-link"
@@ -85,6 +85,9 @@ footer:
     - label: "GitHub"
       icon: "fab fa-fw fa-github"
       url: "https://github.com/"
+    - label: "LinkedIn"
+      icon: "fab fa-fw fa-linkedin"
+      url: "https://www.linkedin.com/in/fkorta/"
 #    - label: "Instagram"
 #      icon: "fab fa-fw fa-instagram"
 #      url: "https://instagram.com/"
@@ -101,6 +104,7 @@ defaults:
       comments: true
       share: true
       related: true
+      classes: wide
   # _pages
   - scope:
       path: "_pages"
