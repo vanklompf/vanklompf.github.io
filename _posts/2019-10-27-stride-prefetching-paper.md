@@ -1,6 +1,7 @@
 ---
 title: "Interesting article about Speculative Prefetching"
-date: 2019-10-22T15:34:30-04:00
+published: false
+date: 2019-10-29
 categories:
   - Blog
 tags:
