@@ -1,6 +1,5 @@
 ---
 title: "The one with shrinking structure (Part I)"
-published: false
 date: 2019-10-26
 categories:
   - blog
@@ -11,13 +10,13 @@ tags:
   - packet processing
 ---
 
-Nowadays real-world applications of C++ gets smaller and more specialised every day. It was decided almost by acclamation that business logic in new projects is written in higher order languages like Java,C#, Python or even something more sophisticated. But there are still areas where C++ shines: embedded and high performance.
+Nowadays real-world applications of C++ gets smaller and more specialised every day. It was decided almost by acclamation that business logic in new projects is written in higher order languages like Java, C#, Python or even something more sophisticated. But there are still areas where C++ shines: embedded and high performance.
 
 To write high performance C++ code knowing language constructs is not nearly enough. Sometimes lower number of computations seen from the level of language (i.e comparisons, arithmetic operations etc.) gives slower code. Check this great talk by Andrei Alexandrescu to see how tricky it can be even for simple sorting algorithm.
 <p align="center">
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=FJJTYQYB1JQ
 " target="_blank"><img src="http://img.youtube.com/vi/FJJTYQYB1JQ/0.jpg" 
-alt="Ooh Crikey Wot A Scorcher by The Lost Boys, 1991" width="480" height="360" border="10" /></a>
+alt="Andrei Alexandrescu" width="480" height="360" border="10" /></a>
 </p>
 
 There are also so many factors not modelled by language standard itself, like aggressive inlining, loop unrolling, link time-optimisation, vectorisation, intrinsics and builtins. And deeper there is yet another layer to performance optimisations: underlying hardware characteristics and architecture. This includes CPU architecture (x86, ARM, etc.), cache hierarchy, NUMA, SIMD, alignment. There are different techniques allowing to make use of hardware specifics. In this and few upcoming posts I will try to show few examples of optimizing on few ways how to optimise high performance code to be more cache and memory friendly by reducing the size of data being processed.
