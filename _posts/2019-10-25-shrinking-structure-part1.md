@@ -19,7 +19,7 @@ To write high performance C++ code knowing language constructs is not nearly eno
 alt="Andrei Alexandrescu" width="480" height="360" border="10" /></a>
 </p>
 
-There are also so many factors not modelled by language standard itself, like aggressive inlining, loop unrolling, link time-optimisation, vectorisation, intrinsics and builtins. And deeper there is yet another layer to performance optimisations: underlying hardware characteristics and architecture. This includes CPU architecture (x86, ARM, etc.), cache hierarchy, NUMA, SIMD, alignment. There are different techniques allowing to make use of hardware specifics. In this and few upcoming posts I will try to show few examples of optimizing on few ways how to optimise high performance code to be more cache and memory friendly by reducing the size of data being processed.
+There are also so many factors not modelled by language standard itself, like aggressive inlining, loop unrolling, link time-optimisation, vectorisation, intrinsics and builtins. And deeper there is yet another layer to performance optimisations: underlying hardware characteristics and architecture. This includes CPU architecture (x86, ARM, etc.), cache hierarchy, NUMA, SIMD, alignment. There are different techniques allowing to make use of hardware specifics. In this and few upcoming posts I will try to show few examples of optimizing high performance code to be more cache and memory friendly by reducing the size of data being processed.
 
 ## Cache is the king
 It is rather well known that one of the most important optimisation is making code cache friendly. One of the questions candidates might hear from me on the interview is: What is numerical complexity of summing all elements from vector and what from the list? What is real life difference in performance? Why difference exists? And most people get it right: vector has higher performance because accessing memory in linear fashion is faster than accessing scattered elements of list. It is sometimes less obvious why exactly contiguous access is faster, but this is a topic for another discussion. 
@@ -73,7 +73,7 @@ Transmit (TX):
  * Set flag “valid” to false if packet size is less than 64 bytes
 
 How fast can we do that? More or less optimal implementation can be found [here](https://github.com/vanklompf/BlogSrc/tree/master/PacketDescriptorsProcessing). 
-Running it on quite powerful CPU gives result **198 Mpps** (millions packets per second) for RX processing and **193 Mpps** for TX processing.
+Running it on [Xeon Gold 6148](https://en.wikichip.org/wiki/intel/xeon_gold/6148) gives result **198 Mpps** (millions packets per second) for RX processing and **193 Mpps** for TX processing.
 Can we do better than that?
 
 ## Padding, alignment and reordering
@@ -113,7 +113,7 @@ Size of our new structure is only **32 bytes**. Now running exactly the same pro
 Even when padding between struct members is eliminated, there still seems to be some overhead. Sum of all data members on 64bit machine is: 
 > 8 + 8 + 8 + 2 + 1 + 1 = 28 bytes 
 
-but `sizeof()` returns 32. Where additional 4 bytes comes from? Structures in C++ are aligneditsel to alignment of its biggest member. So in this case to 8 bytes, and next 8-alignment for 28 will be 32. Fortunately there is a way to avoid this kind of padding by using [type attribute](https://gcc.gnu.org/onlinedocs/gcc/Common-Type-Attributes.html#Common-Type-Attributes) `packed` on our descriptor structure. What it does? According to [gcc manual](https://gcc.gnu.org/onlinedocs/gcc/Common-Type-Attributes.html#Common-Type-Attributes) it specifies that 
+but `sizeof()` returns 32. Where additional 4 bytes comes from? Structures in C++ are aligned itself to alignment of its biggest member. So in this case to 8 bytes, and next 8-alignment for 28 will be 32. Fortunately there is a way to avoid this kind of padding by using [type attribute](https://gcc.gnu.org/onlinedocs/gcc/Common-Type-Attributes.html#Common-Type-Attributes) `packed` on our descriptor structure. What it does? According to [gcc manual](https://gcc.gnu.org/onlinedocs/gcc/Common-Type-Attributes.html#Common-Type-Attributes) it specifies that 
 > each structure member is placed to minimize the memory required. 
 
 Which in short term means: remove all padding.  This is how declaration of our structure looks now:
@@ -126,10 +126,15 @@ Reported size is indeed **28 bytes** and performance was improved to **309 mpps*
 Unfortunately nothing comes for free. Depending on CPU architecture it might be more expensive to extract unaligned data. Reading bitfields requires some shifting and masking done by CPU. And to make things worst on most CPUs there is quite substantial penalty for reading from unaligned addresses. In some cases all performance improvement can be diminished by this factor.
 
 So to sum up, performance characteristics for all cases covered so far looks like that
+#### Xeon Gold 6148
 <p align="center">
 <img src="/assets/images/2019-10-25-shrinking-structure/mpps_chart.png" width="800">
 </p>
 
+#### Intel i7-6700HQ
+<p align="center">
+<img src="/assets/images/2019-10-25-shrinking-structure/mpps_chart_desktop.png" width="800">
+</p>
 
 ## Is there more to that?
 So it looks that there is very real, measurable benefit from reducing the size of data to process in both memory consumption and performance. But it goes even further, in the next part I will show more unordinary (but also complex and obscure) methods for further reducing _hot_ data size.
