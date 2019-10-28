@@ -14,6 +14,7 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 title: Extensa.tech
+url: https://extensa.tech
 email:
 description: >- # this means to ignore newlines until "baseurl:"
   High Performance C++ Programming (among other stuff)
