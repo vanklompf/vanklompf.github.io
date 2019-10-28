@@ -8,7 +8,7 @@ title: "About"
 Hi!
 My name is Franek and I'm software engineer living in Kraków, Poland. 
 
-My adventure with programming and computers in general started back in early '90 when I got my first computer: glorious Atari ST. I still have a lot of sentiment for this machine, which even can be seen in my avatar used here: it is image from [my favourite Atari ST demo](http://www.youtube.com/watch?feature=player_embedded&v=IJGGAJIla3Y).
+My adventure with programming and computers in general started back in early '90 when I got my first computer: glorious Atari ST. I still have a lot of sentiment for this machine, which even can be seen in my avatar used here: it is image from [my favourite Atari ST demo](https://www.youtube.com/watch?feature=player_embedded&v=IJGGAJIla3Y).
 
 In general 16bit demoscene had a lot of influence on my choice of career and probably is in part responsible for my pet subject: low level tricks and optimizations.
 
