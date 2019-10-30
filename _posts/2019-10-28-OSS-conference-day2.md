@@ -1,6 +1,5 @@
 ---
 title: "The one about conference - day two"
-toc: true
 date: 2019-10-29
 categories:
   - blog
