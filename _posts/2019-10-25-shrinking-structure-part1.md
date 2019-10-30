@@ -1,6 +1,7 @@
 ---
 title: "The one with shrinking structure (Part I)"
 date: 2019-10-26
+toc: true
 categories:
   - blog
 tags:

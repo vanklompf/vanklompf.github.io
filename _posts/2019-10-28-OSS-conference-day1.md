@@ -1,6 +1,7 @@
 ---
 title: "The one about conference - day one"
 date: 2019-10-28
+toc: true
 categories:
   - blog
 tags:
