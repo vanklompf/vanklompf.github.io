@@ -15,14 +15,17 @@ Few updates from second day of [Open Source Summit in Lyon](https://events19.lin
 ## Linus Torvalds in conversation with Dirk Hohndel
 The man himself, Linus Torvalds said he hates doing public speeches, so formula of this keynote was rather panel or interview. Linus described what is his current role in kernel development and how his workflow looks. Surprisingly or not **he mostly reads emails**, a lot of them. And **his main role is to say no to people**. 
 <p align="center">
-<figure>
-  <img src="/assets/images/2019-10-28-OSS-conference/knight.jpg" width="500"/>
+<figure width="500">
+  <img src="/assets/images/2019-10-28-OSS-conference/knight.jpg"/>
   <figcaption>Knights Who Say "Ni!"</figcaption>
 </figure>
 </p>
 As much as negative that sounds this is something really crucial in a project of this size. There has to be some gatekeeper with deep understanding of problems and ability to keep code both high quality and readability. Discussion also concerned change of Linux from hobby, fun project into something like OSS enterprise.
 <p align="center">
-<img src="/assets/images/2019-10-28-OSS-conference/enterprise.jpg" width="500">
+<figure width="500">
+  <img src="/assets/images/2019-10-28-OSS-conference/enterprise.jpg"/>
+  <figcaption>Knights Who Say "Ni!"</figcaption>
+</figure>
 </p>
 Complexity and learning curve one need to climb to be able commit kernel changes grows every year. On the other hand Linus said that it was always easier to start contributing to edges of system like some less critical device drivers, utilities, tools etc. With growth of Linux edges also grows and there is more and more opportunities to contribute there.
 
