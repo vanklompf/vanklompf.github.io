@@ -94,6 +94,11 @@ footer:
 #      icon: "fab fa-fw fa-instagram"
 #      url: "https://instagram.com/"
 
+comments:
+  provider: "disqus"
+  disqus:
+    shortname: "extensa-tech"
+
 defaults:
   # _posts
   - scope:
