@@ -1,6 +1,5 @@
 ---
 title: "The one with compiler flag magic"
-published: false
 date: 2019-11-01
 categories:
   - blog
