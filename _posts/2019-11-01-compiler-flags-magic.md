@@ -10,8 +10,7 @@ tags:
   - compilers
   - bitset
 ---
-
-### Introduction
+## Introduction
 At some point in the project I'm working on, I have noticed that variable-size bit set implementation is minor, but still performance bottleneck. For those who are not familiar with the topic, bit set is data structure similar in some way to array, but instead holding and giving access to individual bytes or words it allows accessing individual bits. Underlying structure is usually an array of integers, but provided API allows poking individual bits. For more details check [Wikipedia](https://en.wikipedia.org/wiki/Bit_array) and [C++ Reference](https://en.cppreference.com/w/cpp/utility/bitset). It has a lot of applications in cryptography, neural netowrks etc.
 
 After short investigation I have found two operations that are slower than necessary: Bit Count and Find First Set. In today's post I will focus on the latter. Find First Set or `ffs` is operation which for given word returns position of least significant bit set to 1. So for example for:
@@ -19,7 +18,7 @@ After short investigation I have found two operations that are slower than neces
 56dec => 00111000bin
 ```
 Find First Set returns 4 (remember least significant, so we are counting from the end).
-### Solution
+## Solution
 In implementation I was profiling `ffs` used was [one from not standard extension of glibc](http://man7.org/linux/man-pages/man3/ffs.3.html). In fact there is entire family of functions working on different data sizes, most useful are `ffsl` for 32bit integers and `ffsll` for 64bit ones with signatures looking like that:
 ```cpp
 int ffsl(long int i);
@@ -31,7 +30,7 @@ int __builtin_ffsl (long)
 int __builtin_ffsll (long long)
 ```
 Advantage of builtins is fact that call is replaced with implementation (often in assembler), just like for inline functions. So it is time for…
-### Results
+## Results
 To prove that change will actually improve anything, I have prepared simple benchmark calculating `ffsl` for entire few megabytes buffer. Results were more than surprising:
 ```
 runGlibcFFsl64: 8106 MB/s
@@ -67,7 +66,7 @@ jmp ffsll
 ```
 So there is no doubt that there is call there (`jmp` instruction)! 
 
-### Disbelief
+## Disbelief
 At this point I have suspected some kind of compiler magic optimizing-out and not doing my calculations. But no matter how much changes I have introduced, results were still the same - there is no performance difference between GlibC and builtin implementation. I also started playing with different compiler flags, `march`, language standards, different compiler versions, different optimization flags… Nothing worked. Finally I have applied the same compiler flags as in other project I seen that working and it finally started to make sense! 
 ```
 runGlibcFFsl64: 3865 MB/s
