@@ -12,7 +12,7 @@ tags:
 ---
 
 ### Introduction
-At some point in the project I'm working on, I have noticed that variable-size bit set implementation is minor, but still performance bottleneck. For those who are not familiar with the topic, bit set is data structure similar in some way to array, but instead holding and giving access to individual bytes or words it allows accessing individual bits. Underlying structure is usually an array of integers, but provided API allows poking individual bits. For more details check [Wikipedia](https://en.wikipedia.org/wiki/Bit_array) and [C++ Reference](https://en.cppreference.com/w/cpp/utility/bitset) It has a lot of applications in cryptography, neural netowrks etc.
+At some point in the project I'm working on, I have noticed that variable-size bit set implementation is minor, but still performance bottleneck. For those who are not familiar with the topic, bit set is data structure similar in some way to array, but instead holding and giving access to individual bytes or words it allows accessing individual bits. Underlying structure is usually an array of integers, but provided API allows poking individual bits. For more details check [Wikipedia](https://en.wikipedia.org/wiki/Bit_array) and [C++ Reference](https://en.cppreference.com/w/cpp/utility/bitset). It has a lot of applications in cryptography, neural netowrks etc.
 
 After short investigation I have found two operations that are slower than necessary: Bit Count and Find First Set. In today's post I will focus on the latter. Find First Set or `ffs` is operation which for given word returns position of least significant bit set to 1. So for example for:
 ```
