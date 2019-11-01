@@ -39,7 +39,7 @@ runBuiltinFFsl64: 8191 MB/s
 ```
 What? Almost no difference! How is that even possible? Function call should be real overhead! 
 <p align="center">
-<img src="/assets/images/mindblown.gif" width="220">
+<img src="https://media.giphy.com/media/xT0xeJpnrWC4XWblEk/giphy.gif" width="220">
 </p>
 
 To check what is happening under the hood I have used [Godbolt](https://godbolt.org/).
@@ -74,9 +74,9 @@ runGlibcFFsl64: 3865 MB/s
 runBuiltinFFsl64: 8191 MB/s
 ```
 ## Enlightenment
-After some time digging up which flag was to blame, it turned out it was `-std=gnu++11` that made GlibC implementation so fast! And it was so difficult to spot because I’m using CMake which, when setting C++ standard level to 11, sets this flag silently!
+After some time digging up which flag was to blame, it turned out it was `-std=gnu++11` that made GlibC implementation so fast! And it was so difficult to spot because I’m using CMake which, when setting C++ standard level to 11, enables this flag silently!
 <p align="center">
-<img src="/assets/images/magic.gif" width="220">
+<img src="https://media.giphy.com/media/ujUdrdpX7Ok5W/giphy.gif" width="220">
 </p>
 
 What `-std=gnu++11` really does? List of [changes introduced](https://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html) by this flag is long and I wasn’t able to find explicit description what it does to `fsll`, but [Godbolt](https://godbolt.org/) provides some clues:
