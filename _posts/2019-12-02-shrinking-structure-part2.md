@@ -11,7 +11,7 @@ tags:
   
 ---
 
-In [the last post](/blog/shrinking-structure-part1) we have been looking on to how size of data, specifically packet descriptors, impacts processing performance. As it turns out, reducing data size is really important in gaining speed. In today's post I will try to present few additional, more aggressive and intrusive methods to reduce data size.
+In [the last post](/blog/shrinking-structure-part1) we have been looking on to how size of data, specifically packet descriptors, impacts processing performance. As it turns out, reducing data size is really important in gaining speed. In today's post I will try to present few additional, more aggressive and intrusive methods to further reduce structure size.
 
 
 ## Know your data
@@ -39,18 +39,18 @@ struct PacketDescriptorWithAssumptions {
 Unfortunately neither c++ standard nor gcc extensions have 48 bit integer types for x86 architecture, but bitfields works just fine here. Of course accessing and setting bit field values will be slightly slower than using basic integer types. Size of  new structure is **25 bytes**, so there were some minor savings. Processing performance is now **310 Mpps RX** and **228 Mpps TX**, so actually for TX we have performance loss, due to additional masking and shifting bits needed to access bitfields. 
 
 ## Tagged pointers
-So how much more we can compress those descriptors? Is there any unused space left in their memory representation? It turns out it is, just not that obvious and under some conditions.
-For a moment let's think how much information basic data types keeps.
+So how much more we can compress those descriptors? Is there any unused space left in their memory representation? It turns out it is, just not that obvious and available only under some conditions.
+For a moment let's think how much information basic data types keep.
 
 | Type | Bits of information |
-|-------|--------|
+|-------|--------:|
 | uint8_t | 8 |
 | uint8_t* | 64 |
 | uint16_t* | 63 |
 | uint32_t* | 62 |
 | uint64_t* | 61 |
 
-Let's explain that. `uint8_t` is simple, this is just an integer type, every bit is meaningful. For `uint8_t` pointer there is also nothing unusual. To be able to address every possible byte in memory, so with 1 byte resolution, every value of 64-bit pointer is needed. Interesting things start to happen with `uint16_t*`. To address those, only even memory addresses are needed, this is 2 bytes resolution and one last bit in pointer actually doesn't hold any valuable piece of information. This is however with important assumption that values are aligned! It will not work for values which are, for example due to structure packing, unaligned. It is the same for 32 and 64-bit integers, here pointer resolution is 4 and 8 bytes (still, assuming aligned pointers). So in `uint64_t` aligned pointer there are 3 bits of information that can be used to store for example `physicalPort`. Memory representation of such pointer will look like that:
+Let's explain that. `uint8_t` is simple, this is just an integer type, every bit is meaningful. For `uint8_t` pointer there is also nothing unusual. To be able to address every possible byte in memory, so with 1 byte resolution, every value of 64-bit pointer is needed. Interesting things start to happen with `uint16_t*`. To address those, only even memory addresses are needed, this is 2 bytes resolution and one last bit in pointer actually doesn't hold any valuable piece of information. This is however with important assumption that data are aligned! It will not work for data which are, for example due to structure packing, unaligned. It is the same for 32 and 64-bit integers, here pointer resolution is 4 and 8 bytes (still, assuming aligned pointers). So in `uint64_t` aligned pointer there are 3 bits of information that can be used to store for example `physicalPort`. Memory representation of such pointer will look like that:
 
 ``ddddddddd|ddddddddd|ddddddddd|ddddddddd|ddddddddd|ddddddddd|ddddddddd|dddddTTT``
 
@@ -102,7 +102,7 @@ struct PacketDescriptorStamped
 This way we have decreased structure size to **22 bytes**. Processing performance is now **347 Mpps RX** and **228 Mpps TX**. This is the best result for RX processing so far, but still not that good for TX. So as usual, your mileage may vary, always measure and do not assume anything.
 
 ## Summary
-Using all described techniques I was able to reduce the size of structure from 48 to 22 bytes. So impressives over 50% reduction! This works great for memory usage, but not always that great for performance. Making data members unaligned and packing them to bitfields has its cost. Only doing careful measurements in specific use-case can answer which changes will actually improve performance. But it is always worth knowing that such possibilities exist.
+Using all described techniques I was able to reduce the size of structure from 48 to 22 bytes. Impressives over 50% reduction! This works great for memory usage, but not always that great for performance. Making data members unaligned and packing them to bitfields has its cost. Only doing careful measurements in specific use-case can answer which changes will actually improve performance. But it is always worth knowing that such possibilities exist.
 
 Below is a summary of results for all size reduction method presented in both articles. Additionally I have added "trivial" processing where only accessed field is `size`. This one should benefit the most form size reduction, as unpacking data is limited to a minimum.
 Full results looks like that:
@@ -111,11 +111,11 @@ Full results looks like that:
 <img src="/assets/images/2019-10-25-shrinking-structure/mpps_chart_skylake2.png" width="800">
 </p>
 
-#### Intel i7-6700HQ
+#### Intel i5-7500
 <p align="center">
 <img src="/assets/images/2019-10-25-shrinking-structure/mpps_chart_desktop2.png" width="800">
 </p>
-It seems that overall `packed` gives best performance, but for specific use-cases where processing is minimal, full blown solution with `"stamped" pointers` can also be used. I have another interesting observation here: performance of high-core server CPU is terrible compared to laptop CPU. It seems that single-core performance of server processors is quite limited and they are highly optimised for multi-threading.
+It seems that overall `packed` gives best performance, but for specific use-cases where processing is minimal, full blown solution with `"stamped" pointers` can also be used. I have another interesting observation here: performance of high-core server CPU is terrible compared to desktop CPU. It seems that single-core performance of server processors is quite limited and they are highly optimised for multi-threading.
 
 The final working code presented in this post is, as usual [on my GitHub](https://github.com/vanklompf/BlogSrc/tree/master/PacketDescriptorsProcessing/).
 
