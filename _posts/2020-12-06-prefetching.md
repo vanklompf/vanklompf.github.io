@@ -1,7 +1,6 @@
 ---
-title: "Prefetching in data processing"
-published: false
-date: 2020-01-06
+title: "Prefetching in memory-intensive applications"
+date: 2020-01-16
 categories:
   - blog
 tags:
@@ -12,80 +11,88 @@ tags:
   
 ---
 
-In [the last post](/blog/shrinking-structure-part2) we have been looking on various, sometimes intrusive and complicated methods of compacting data structures for providing better memory and cache usage. Today we will continue with other method of improving performance for data intensive applications: prefetching.
+In [previous post](/blog/shrinking-structure-part2) we have been looking on various, sometimes intrusive and complicated methods of compacting data structures for providing better memory and cache usage. Today we will continue with other method of improving performance for data intensive applications: prefetching.
 
 ## Data flow in computer system
-Before starting with showing examples, let's think about how and when actually data moves from memory to processor. Imagine very simplistic example: calculating sum of array elements.
+Before starting with showing examples, let's think about how and when actually data moves from memory to CPU. Imagine very simplistic example: calculating sum of array elements.
 ```cpp
-uint64* data[64000];
+uint64_t data[64000];
 uint64_t sum = 0;
 for(int i=0;i<64000;i++) {
     sum += data[i];
 }
 ```
 
-Here is the simplest system consisting only from CPU and memory:
-[IMAGE]
+Simplest system has memory functionally connected directly to the CPU, which means data is loaded and stored from processor registers to memory. On such system memory will be accessed every time `data[i]` is referenced. In modern CPU that would be a disaster as access to RAM is terribly slow, in range of ~100ns (where one CPU cycle is ~0.4ns). Fortunately most CPUs including small embedded ones are more sophisticated than that. 
 
-On such system memory will be accessed, every time we reference `data[i]`.  In modern CPU that would be disaster as access to RAM is terribly slow, in range of ~100ns (where one CPU cycle is ~0.4ns). Fortunatelly most of modern CPU including small embedded ones are more compilcated than that.
-To improve performance, back in '80s mainstream computer systems were enchanced witch cache, in most cases many levels of it:
-[IMAGE]
-Here when reading value from memory, not only this particular value is loaded but also nearby 64 bytes of data. This chunk of data is called cache line. So in our example where data are accessed in 64bit (8 byte) chunks, every 8th iteration CPU will have to wait on memory access.
+To improve performance, back in '80s mainstream computer systems were enhanced witch cache, in most cases many levels of it. Cache is very fast memory, sitting between CPU and RAM, while usually being physical part of CPU. On systems equipped with cache, when reading value from memory to register, chunk of data near requested address is loaded to cache. This chunk of data has fixed size (almost always 64 bytes) and is called cache line. Whenever accessing data from this chunk, there is no need to read it from main memory, but rather from much faster cache. In our example, where data is accessed in 64bit (8 byte) chunks, only every 8th iteration CPU will have to wait on main memory access.
 
-[IMAGE]
-This design was enhanced even further witch introduction of `speculative prefetching`. This ideas is based on fact that data in most cases are accessed in predictable manner and can be read ahead of time to cache. Simplest case of predictability is continous linear memory access, exactly as in our example. Any relativaly modern CPU will notice that and read few next cache lines, even before CPU will attempt accessing those, so data will be in cache when needed. This way there will be almost no memory stalls during program execution. This process of reading data from RAM to cache, ahead of time is called prefetching. Predicting which cache lines to read next is not limited to continous access, it works well also for stride access where processing every Nth element in memory. Please note that image is not accurate when it comes to "prefetching unit" location, which is usually part of CPU internals or memory controler. Also there is much more into that, like multiple cache levels, cache policies, cache synchronisation protocols but describint those in details would definitely be out of scope for this article.
+This design was enhanced even further with introduction of `speculative prefetching`. 
+<p align="center">
+<img src="/assets/images/2020-01-16-prefetching/image_cache.png" width="800">
+</p>
+This idea is based on the fact that data in most cases is accessed in predictable manner and can be read ahead of time to cache. Simplest case of predictability is continuous linear memory access, exactly as in our example. Any relatively modern CPU will notice that data is accessed in linear manner and read few consecutive lines of cache, to be available when needed. This way in our example there will be almost no memory stalls (at least in theory). This process of reading data from RAM to cache, ahead of time is called prefetching. Predicting which cache line to read next is not limited to continuous access, it works well also for stride access where processing every Nth element in memory. Please note that image is not accurate when it comes to "prefetching unit" location, which is usually part of CPU internals or memory controller. Also there is much more into that topic, like multiple cache levels, cache policies, cache synchronisation protocols but describing those details would be out of scope for this article.
 
 ## Practical examples
 ### Prefetching descriptors
-Let's get back to our example implementation of processing packet descriptors from previous article. Using `PacketDescriptorPacked`, which had best performance in most cases we will try improve it further with prefetching. Prefetching of arbitrary memory location can be done using: `__builtin_prefetch` which details can be found [here](https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html). The only obligatory argument is pointer to memory location that needs to be loaded into cache. Of course not only exact address will be loaded, but entire 64bytes cache line. Pointer can be invalid or null, which is useful because for example some bound checking can be ignored saving CPU cycles. There are two additional arguments to `__builtin_prefetch` but thoise are not important for this example. 
-So let's try and add prefetching into benchmark loop. How much data to prefetch? In theory this depends on many factors like cache sizes, memory latency, time to process single line of cache worth of data. This is very difficult to evaluate properly, so best option is to just try multiple options. This chart shows performance for different number lines of cache loaded in advance. 
-[chart]
-There was no visible performance improvement no matter how much data were prefetched. Reason for that is something that was already mentioned before: CPU is smart enough to do prefetching for us. Access pattern in our benchmark is completely linear which is extremely easy to predict. Data are being prefetched transparently and no amount of explicit prefetching can improve that.
+Let's get back to our example of processing packet descriptors from previous article. We will use structure with best overall performance profile: `PacketDescriptorPacked` and try improve it further with prefetching. Prefetching of arbitrary memory location can be done using: `__builtin_prefetch` which details can be found [in gcc documentation](https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html). The only obligatory argument is pointer to memory location requested for prefetching. Of course not only exact address will be loaded, but entire 64 bytes cache line. Pointer can be invalid or null, which is useful because in most cases bound checking can be ignored saving few CPU cycles. There are two additional arguments to `__builtin_prefetch`, but those are not important here. 
+Now let's try and add prefetching into benchmark loop. How much data to prefetch ahead of time? In theory this depends on many factors like cache size, memory latency, time to process single line of cache worth of data. This is very difficult to evaluate properly, so best option is to just try multiple values and measure.
+<p align="center">
+<img src="/assets/images/2020-01-16-prefetching/chart_descriptors.png" width="800">
+</p>
+Performance improvement was moderate at most. Reason for that was already mentioned before: CPU is smart enough to do prefetching for us. Access pattern in benchmark is completely linear which is extremely easy to predict. Data are being prefetched transparently and probably only reason for observed improvement is hardware prefetcher being too conservative and not prefetching more than 1kb ahead. Also we can observe performance degradation for small values, this is an important indication that prefetching is not for free and introduces some overhead: i.e prefetching data already in cache will be no-op wasting CPU cycles.
 
 ### Prefetching payload
-Another example which is also practical and applicable to working with network packets is iterating over packet descriptors but processing also payload pointed by one of descriptor structure field. This has dramatic impact on memory access pattern: descriptors are placed back to back, one after another, but payload can be in completely different memory location, not adjacent one to another, which is not possible to predict easily.
-[image]
-Benchmark simulating this kind of processing was implemented in `ProcessDescriptorsPayloadRead` function. It is completely trivial, just summing up first word from packet payloads. We are not prefetching descriptors here as it was proven pointless in previous example, but just payload for different number of packets ahead. This way we can expect at least some improvements in performance, because CPU has no way knowing our data structures and guessing which data will be needed next, but our program knows that and can issue prefetch command for those data.
-[chart]
-Suprisingly there was just marginal performance improvement. There is also reason for that. Time spent in processing data is so miniscule compared to time needed to load (or prefetch) data that no memory bandwidth became limiting factor of performance here. No prefetching amount can improve that significantly, because memory bus is busy almost all the time anyway. For prefetching to make sense and improve anything it needs to have chance running "in background", so when CPU is proccessing current batch of data, future data alre alredy being prefetched. Loading data from RAM to cache can work in paralell with CPU doing other work.
+Another example applicable to working with network packets is iterating over packet descriptors but processing also payload pointed by one of the descriptor structure fields. This has dramatic impact on memory access pattern: descriptors are placed back to back, one after another, but payload can be in a completely different memory location, not adjacent to one another. This pattern is not possible to predict and gives more space for performance improvements.
+<p align="center">
+<img src="/assets/images/2020-01-16-prefetching/image_descr_payload.png" width="800">
+</p>
+Benchmark simulating this kind of processing is implemented in `ProcessDescriptorsPayloadRead` function. Algorithm is completely trivial, iterating over descriptors and summing up first word from packet payload. Having learned from previous example, we are not prefetching descriptors, only payload for different number of packets ahead. CPU has no way knowing our data structures, so issuing prefetch instructions gives CPU hint which data will be needed in the near future.
+<p align="center">
+<img src="/assets/images/2020-01-16-prefetching/chart_payload.png" width="800">
+</p>
+Surprisingly there was even less performance improvement than previously and performance degradation when prefetching more than 256 packets. This is because time spent in processing data is so miniscule compared to the time needed to load (or prefetch) data that memory bandwidth became limiting factor. No prefetching amount can improve that significantly, memory bus is busy almost all the time and giving hints which data will be needed is not going to help. For prefetching to make sense and improve anything it needs to have chance running "in the background". There has to be some amount of time when CPU is processing current batch of data so future data can be prefetched.
 
 ### Prefetching payload with heavy processing
-Modified example simulates more time consuming processing of data. So at least there are periods of time where CPU is busy processing data already available in cache and more data can be loaded during that period, making difference for prefetching case.
-[chart]
-Here performance improvement is much more significant going up to xx%, compared with no-prefetching case. As for quite simple and safe change in code, not affectiong business logic at all this is quite impresive result. This shows prefetching as powerful tool for memory-bound applications. There are some prerequisites, like certain processing to memory access ratio and keeping prefetching logic as minimal as possible, so that our improvements are not diminished by it, but overall this makes good and relatively simple optimising technique.
+Modified example implemented in `ProcessDescriptorsPayloadReadHeavy` simulates more time consuming data processing. Now there are periods of time where CPU is busy crunching data already available in cache and future data can be loaded in background. 
+<p align="center">
+<img src="/assets/images/2020-01-16-prefetching/chart_payload_heavy.png" width="800">
+</p>
+Here performance improvement is much more significant. Performance went from `5mpps` when not prefetching to `11mpps` when prefetching 4 packets ahead. As for quite simple, safe and localised change this is an impressive result. It shows prefetching as powerful performance improvement for memory-bound applications. There are some prerequisites, like certain processing-to-memory-access ratio and keeping prefetching logic as minimal as possible, so that our improvements are not diminished by it, but overall this makes good and relatively simple optimisation technique.
 
 ### Bonus: optional arguments
-`__builtin_prefetch` has two additional arguments: `rw` and `locality`. 
-`rw` indicates if prefetched memory is going to be used for read or write. This sounds simple in theory, but is more complicated to make it work in practice. One issue is that only most modern CPUs supports, according to (gcc manual)[https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html] starting since `broadwell` architecture at least for Intel. So sometimes to emit `PREFETCHW` instructionand and actually make any difference between read and write prefetching architectural dispatching is needed. Second more complex issue is that actually it is hard to find case where write prefetching makes any difference. On first glimpse, it seems that when loading data to cache it make no difference if we are going later to read or write, but there are some cases in multi-core and especially multi-socket machines, where it can make quite lot of difference. It is mostly about invalidating cache on all other CPUs, so that when writing to cache memory, there will be no need for cache sync-up between CPUS. But this is way out of scope for this post and requires more studying on my side.
-As for `locality` it is supposed to indicate degree of `temporal locality`. A value of zero means that the data has no temporal locality, higher values means more temporal locality. This probably has something to do with levels of cache where data needs to be loaded, but let's just try it out and see what difference does it make in our examples.
+`__builtin_prefetch` has two additional parameters: `rw` and `locality`. 
+`rw` indicates if prefetched memory is going to be used for read or write. This sounds simple in theory, but is more complicated to make it work in practice. One issue is that only most modern CPUs support it. According to [gcc manual](https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html) Intel has it since `broadwell` architecture. So there is need either for targeting application only fo latest CPUs, or for CPU architecture dispatching. Second more complex issue is that it is hard to find case where write prefetching makes any difference. On first glimpse, it seems that when loading data to cache, it make no difference if CPU is going to read or write it later. But there are some cases in multi-core and especially multi-socket systems, where it can make quite a lot of difference. It concerns mostly invalidating cache on remote CPUs, so that when writing to cache, there will be no need for cache sync-up between CPUs. This is not easy to simulate and this topic requires more study on my side.
+
+As for `locality` it is supposed to indicate degree of `temporal locality`. A value of zero means that the data has no temporal locality, higher values means more temporal locality. This probably has something to do with levels of cache where data needs to be loaded, but let's just try it out and see what difference does it make.
 ```
-				LOCALITY
-PREFETCHING	 0	 1	 2	 3
-0	  		62	62	62	62
-1	  		57	57	57	57
-2	  		58	58	58	58
-4	  		59	59	59	59
-8	  		61	61	61	61
-16	  		63	63	63	63
-32	  		62	62	62	62
-64	  		62	62	62	62
-128	  		62	62	62	62
-256	  		60	60	61	60
-384	  		60	60	60	60
-512	  		58	58	58	58
-768	  		52	52	52	52
-1024  		47	47	47	47
+                    LOCALITY
+PREFETCHING    0     1     2     3
+0             62    62    62    62
+1             57    57    57    57
+2             58    58    58    58
+4             59    59    59    59
+8             61    61    61    61
+16            63    63    63    63
+32            62    62    62    62
+64            62    62    62    62
+128           62    62    62    62
+256           60    60    61    60
+384           60    60    60    60
+512           58    58    58    58
+768           52    52    52    52
+1024          47    47    47    47
 ```
-There is no differentce for all the values of locality, so either it requires some special conditions to work or it is just not working for this architecture
+There is no measurable difference for any value of locality, so either it requires some special conditions to work or it is just not functional for this CPU architecture.
 
 ## Tracing memory performance
-As we can see it is not trivial to correctly identify and solve memory bottlenecks in even simple applications. How can we know that our application is limited by memory performance and changes we are doing are beneficial? Fortunatelly CPU provides various hardware counters storing number of all memory acceses and ones that were served by cache. This can show us how effective we are using cache in CPU. Those counters can be accessed programatically so for exampe we can instrument only performance critical part of our code, but easier way to access them is by using `perf stat` tool.
-Running it requires specyfing which counters we are interested in and application we want to measure:
+It is not trivial to correctly identify and solve memory bottlenecks even in simple applications. How can we know that our application is limited by memory bandwidth? Which changes are reducing memory stalls? Fortunately CPU provides various hardware counters storing number of events like all memory reads, reads served by cache (cache-hits), reads served by main memory (cache-misses). Those counters can be accessed programmatically, as instrumentation in code i.e for performance critical parts of application or by using `perf stat` tool.
+Running it requires specifying which counters we are interested in and application we want to measure:
 
 ```
 perf stat -e cache-misses,cache-references,cycles,instructions,L1-dcache-loads,L1-dcache-misses,LLC-loads,LLC-load-misses ./PacketDescriptorsPrefetching
 ```
-Here we have specified counters responsible for various levels of data cache and ones that can show instructions per cycle ratio.
+Here we have specified counters responsible for various levels of data cache and ones that can show instructions per cycle.
 
 Results without payload prefetching:
 ```
@@ -115,8 +122,9 @@ Payload read processing performance long: 4 mpps
          574832230      LLC-loads                                                     (62.49%)
           48264412      LLC-load-misses           #    8.40% of all LL-cache hits     (62.49%)
 ```
-To some surprise general `cache-misses` and `L1-dcache-misses` stays the same. But there is clear difference for `LLC-load-misses` (LLC stands for last level cache, so L3 on this CPU) which is responsible for performance gain when prefetching. Also increased `insn per cycle` shows that CPU was able to spend more time executing code and less waiting on memory.
+To some surprise general `cache-misses` and `L1-dcache-misses` stays the same. But there is a clear difference in `LLC-load-misses` (LLC stands for last level cache, so L3 on this particular CPU). Number of cache-misses, so events when data were not present in cache and had to be read from main memory, has decreased drastically. Also improved `insn per cycle` shows that CPU was able to spend more time executing code and less waiting on memory.
 
 ## Summary
-I hope I have showed that prefetching can be viable technique of improving performance at least in some class of application. Having some knowledge about CPU and cache architecture as well some profiling tools can be very helpful here. Also it is worth to remember that prefetching is very architecture dependent and volatile: what works well on one CPU can work different way on other. It is always important to know range of architectures our application will work on and measure performance instead of making assumptions. Things like predictive prefetching in CPU and proper timing of prefetch calls can be tricky.
+Hopefully this post has proven prefetching as a viable technique for improving performance in memory intensive applications. Having some knowledge about CPU and cache architecture as well some profiling tools can be very helpful in chasing bottlenecks. Also it is worth remembering that prefetching is very architecture dependent and volatile: what works well on one CPU can work different way on another. It is always important to know a range of architectures our application will work on and after making changes based on scientific guess, measure results. Things like predictive prefetching in CPU, proper timing, multi-core systems calls can make it tricky.
+
 All code used to write this article can be found, as usual [on my GitHub](https://github.com/vanklompf/BlogSrc/tree/master/PacketDescriptorsProcessing/).
