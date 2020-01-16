@@ -12,6 +12,10 @@ tags:
 ---
 
 In [previous post](/blog/shrinking-structure-part2) we have been looking on various, sometimes intrusive and complicated methods of compacting data structures for providing better memory and cache usage. Today we will continue with other method of improving performance for data intensive applications: prefetching.
+<p align="center">
+<img src="/assets/images/2020-01-16-prefetching/static_ram.jpg">
+</p>
+
 
 ## Data flow in computer system
 Before starting with showing examples, let's think about how and when actually data moves from memory to CPU. Imagine very simplistic example: calculating sum of array elements.
