@@ -11,7 +11,7 @@ tags:
   
 ---
 
-In [previous post](/blog/shrinking-structure-part2) we have been looking on various, sometimes intrusive and complicated methods of compacting data structures for providing better memory and cache usage. Today we will continue with other method of improving performance for data intensive applications: prefetching.
+In [the previous post](/blog/shrinking-structure-part2) we have been looking on various, sometimes intrusive and complicated methods of compacting data structures for providing better memory and cache usage. Today we will continue with other method of improving performance for data intensive applications: prefetching.
 <p align="center">
 <img src="/assets/images/2020-01-16-prefetching/static_ram.jpg">
 </p>
@@ -27,7 +27,7 @@ for(int i=0;i<64000;i++) {
 }
 ```
 
-The simplest system has memory functionally connected directly to the CPU, which means data is loaded and stored from processor registers to memory. On such system memory will be accessed every time `data[i]` is referenced. In modern CPU that would be a disaster as access to RAM is terribly slow, in range of ~100ns (where one CPU cycle is ~0.4ns). Fortunately, most CPUs including small embedded ones are more sophisticated than that. 
+The simplest system has memory functionally connected directly to the CPU, which means data is loaded and stored from processor registers to memory. On such system memory will be accessed every time `data[i]` is referenced. In modern CPU that would be a disaster as access to RAM is slow, in range of ~100ns (where one CPU cycle is ~0.4ns). Fortunately, most CPUs including small embedded ones are more sophisticated than that. 
 
 To improve performance, back in '80s mainstream computer systems were enhanced witch cache, in most cases many levels of it. A cache is a very fast memory, sitting between CPU and RAM, while usually being physically integrated into the CPU. On systems equipped with a cache, when reading a value from memory to register, a chunk of data near the requested address is loaded to the cache. This chunk of data has fixed size (almost always 64 bytes), is aligned to its size and is called the cache line. Whenever accessing data from this chunk, there is no need to read it from the main memory, but rather from a much faster cache. In our example, where data is accessed in 64bit (8 bytes) chunks, only every 8th iteration CPU will have to wait on memory access.
 
@@ -35,7 +35,7 @@ This design was enhanced even further with the introduction of `speculative pref
 <p align="center">
 <img src="/assets/images/2020-01-16-prefetching/image_cache.png" width="800">
 </p>
-This idea is based on the fact that data in most cases is accessed in a predictable manner and can be read ahead of time to cache. The simplest case of predictability is continuous linear memory access, exactly as in our example. Any relatively modern CPU will notice that data is accessed in a linear manner and read a few consecutive lines of cache, to be available when needed. This way in our example there will be almost no memory stalls (at least in theory). This process of reading data from RAM to cache, ahead of time is called prefetching. Predicting which cache line to read next is not limited to continuous access, it works well also for stride access where processing every Nth element in memory. There is much more into that topic, like multiple cache levels, cache policies, cache synchronization protocols but describing those details would be out of scope for this article.
+This idea is based on the fact that data in most cases is accessed predictably and can be read ahead of time to cache. The simplest case of predictability is continuous linear memory access, exactly as in our example. Any relatively modern CPU will notice that data is accessed linearly and read a few consecutive lines of cache, to be available when needed. This way in our example there will be almost no memory stalls (at least in theory). This process of reading data from RAM to cache, ahead of time is called prefetching. Predicting which cache line to read next is not limited to continuous access, it works well also for stride access where processing every Nth element in memory. There is much more into that topic, like multiple cache levels, cache policies, cache synchronization protocols but describing those details would be out of scope for this article.
 
 ## Practical examples
 ### Prefetching descriptors
@@ -44,25 +44,25 @@ Now let's try and add prefetching into the benchmark loop. How much data to pref
 <p align="center">
 <img src="/assets/images/2020-01-16-prefetching/chart_descriptors.png" width="800">
 </p>
-Performance improvement was moderate at most. The reason for that was already mentioned before: CPU is smart enough to do prefetching for us. Access pattern in benchmark is completely linear which is extremely easy to predict. Data are being prefetched transparently and probably only reason for observed improvement is hardware prefetcher being too conservative and not prefetching more than 1kb ahead. Also we can observe performance degradation for small values, this is an important indication that prefetching is not for free and introduces some overhead: i.e prefetching data already in cache will be no-op wasting CPU cycles.
+Performance improvement was moderate at most. The reason for that was already mentioned before: CPU is smart enough to do prefetching for us. Access pattern in the benchmark is completely linear which is extremely easy to predict. Data are being prefetched transparently and probably the only reason for improvement observed is hardware prefetcher being too conservative and not prefetching more than 1kb ahead. Also, we can observe performance degradation for small values, this is an important indication that prefetching is not for free and introduces some overhead: i.e prefetching data already in cache will be no-op wasting CPU cycles.
 
 ### Prefetching payload
 Another example applicable to working with network packets is iterating over packet descriptors but processing also payload pointed by one of the descriptor structure fields. This has a dramatic impact on memory access pattern: descriptors are placed back to back, one after another, but payload can be in a completely different memory locations, not adjacent to one another. This pattern is not possible to predict and gives more space for performance improvements.
 <p align="center">
 <img src="/assets/images/2020-01-16-prefetching/image_descr_payload.png" width="800">
 </p>
-Benchmark simulating this kind of processing is implemented in the `ProcessDescriptorsPayloadRead` function. The algorithm is completely trivial, iterating over descriptors and summing up the first word from packet payload. Having learned from the previous example, we are not prefetching descriptors, only payload for a different number of packets ahead. CPU has no way of knowing our data structures, so issuing prefetch instructions gives CPU a hint which data will be needed in the near future.
+Benchmark simulating this kind of processing is implemented in the `ProcessDescriptorsPayloadRead` function. The algorithm is completely trivial, iterating over descriptors and summing up the first word from packet payload. Having learned from the previous example, we are not prefetching descriptors, only payload for a different number of packets ahead. CPU has no way of knowing our data structures, so issuing prefetch instructions gives CPU a hint which data will be needed soon.
 <p align="center">
 <img src="/assets/images/2020-01-16-prefetching/chart_payload.png" width="800">
 </p>
 Surprisingly there was even less performance improvement than previously and performance degradation when prefetching more than 256 packets. This is because time spent in processing data is so minuscule compared to the time needed to load (or prefetch) data that memory bandwidth became a limiting factor. No prefetching amount can improve that significantly, the memory bus is busy almost all the time and giving hints which data will be needed is not going to help. For prefetching to make sense and improve anything it needs to have a chance of running "in the background". There has to be some amount of time when CPU is processing the current batch of data so future data can be prefetched.
 
 ### Prefetching payload with heavy processing
-Modified example implemented in `ProcessDescriptorsPayloadReadHeavy` simulates more time consuming data processing. Now there are periods of time where CPU is busy crunching data already available in cache and future data can be loaded in background. 
+A modified example implemented in `ProcessDescriptorsPayloadReadHeavy` simulates more time-consuming data processing. Now there are periods where CPU is busy crunching data already available in cache and future data can be loaded in the background. 
 <p align="center">
 <img src="/assets/images/2020-01-16-prefetching/chart_payload_heavy.png" width="800">
 </p>
-Here performance improvement is much more significant. Performance went from `5mpps` when not prefetching to `11mpps` when prefetching 4 packets ahead. As for quite simple, safe and localised change this is an impressive result. It shows prefetching as powerful performance improvement for memory-bound applications. There are some prerequisites, like certain processing-to-memory-access ratio and keeping prefetching logic as minimal as possible, so that our improvements are not diminished by it, but overall this makes good and relatively simple optimisation technique.
+Here performance improvement is much more significant. The performance went from `5mpps` when not prefetching to `11mpps` when prefetching 4 packets ahead. As for quite simple, safe and localized change, this is an impressive result. It shows prefetching as a powerful performance improvement for memory-bound applications. There are some prerequisites, like certain processing-to-memory-access ratio and keeping prefetching logic as minimal as possible, so that our improvements are not diminished by it, but overall this makes good and relatively simple optimization technique.
 
 ### Bonus: optional arguments
 `__builtin_prefetch` has two additional parameters: `rw` and `locality`. 
