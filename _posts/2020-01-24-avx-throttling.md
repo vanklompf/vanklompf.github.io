@@ -7,10 +7,25 @@ categories:
 tags:
   - C++
   - performance
-  - cache
-  - Packet Processing
+  - CPU
+  - glibc
   
 ---
+
+Modern CPUs contain so called vector extensions or SIMD instructions. SIMD stands for Single Instruction Multiple Data. x86-64 CPUs example of such instructions would be (in order of apperance): MMX, SSE, SSE2, SSE3, SSSE3, SSE4, SSE4.2, AVX, AVX2, AVX512. Idea behind those extensions is possibility to process multiple input data or vector of data in single operation. This kind of processing is very useful i.e in numerical computations, graphic, neural networks. All cases where doing repetitive mathematical operations over big set of data like matrices or pixel streams. Regular non-vector x86-64 instructions usually takes 64bit input operands so for example can add 64bit numbers using single instructions. Vector extensions allows to increase that to 128bit (MMX, SSE), 256bit (AVX, AVX2) or even 512bit (AVX512) so respectively 2, 4 and 8 64bit numbers in one go. Of course those instruction sets can do much more than just adding nuimbers. Is it all that perfect? Can our software run 8 times faster on CPU supporting AVX512? It's not that simple:
+   * SIMD instructions shine mostly in applications processing huge amount of **numerical** data
+   * data needs to be aligned (so for example not applicable to Packet Descriptors placed back to back or packed from [previous posts](/blog/shrinking-structure-part1))
+   * doesn't work well with branches (so if's). Can accelerate matrix multiplication, but not that much file compressor, which usually requires a lot of branches
+   * not directly supported by standard C++ - requires specific data types (__m512i, __m256i, __m128i etc.) and intrinsics (_mm256_add_pd, _mm_add_epi16 etc.)
+   * can cause CPU clock to drop by almost 40%!!!
+
+This article will focus on latest problem.
+
+##
+As it turns out when using AVX2 and AVX512 extensions CPU clock can go down by few hundreds MHz. Apparently most powerful vector instructions uses so many transistors and draws so much power, that CPU needs to lower clock to keep within its TDP (thermal design power). While internal details are complex and not fully available outside Intel labs few things are known. Not every AVX2/AVX512 instruction has this limitation, there are some that can be executed at full speed indefinitely. And even when executing instructions which causes CPU clock throttling, it is not enough to run single instruction.
+
+
+
 
 In [the previous post](/blog/shrinking-structure-part2) we have been looking on various, sometimes intrusive and complicated methods of compacting data structures for providing better memory and cache usage. Today we will continue with other method of improving performance for data intensive applications: prefetching.
 <p align="center">
