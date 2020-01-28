@@ -12,17 +12,30 @@ tags:
   
 ---
 
-Modern CPUs contain so called vector extensions or SIMD instructions. SIMD stands for Single Instruction Multiple Data. x86-64 CPUs example of such instructions would be (in order of apperance): MMX, SSE, SSE2, SSE3, SSSE3, SSE4, SSE4.2, AVX, AVX2, AVX512. Idea behind those extensions is possibility to process multiple input data or vector of data in single operation. This kind of processing is very useful i.e in numerical computations, graphic, neural networks. All cases where doing repetitive mathematical operations over big set of data like matrices or pixel streams. Regular non-vector x86-64 instructions usually takes 64bit input operands so for example can add 64bit numbers using single instructions. Vector extensions allows to increase that to 128bit (MMX, SSE), 256bit (AVX, AVX2) or even 512bit (AVX512) so respectively 2, 4 and 8 64bit numbers in one go. Of course those instruction sets can do much more than just adding nuimbers. Is it all that perfect? Can our software run 8 times faster on CPU supporting AVX512? It's not that simple:
+Modern CPUs contain so called vector extensions or SIMD instructions. SIMD stands for Single Instruction Multiple Data. For x86-64 CPUs example of such instructions would be (in historical order): MMX, SSE, SSE2, SSE3, SSSE3, SSE4, SSE4.2, AVX, AVX2, AVX512. Idea behind those extensions is possibility to process multiple input data or vector of data in single operation. This kind of processing is very useful i.e in numerical computations, computer graphic, neural networks. All cases where doing repetitive mathematical operations over big set of data like matrices or pixel streams. Regular non-vector x86-64 instructions usually takes 64bit input operands so for example can add 64bit numbers using single instruction. Vector extensions allows to increase that to 128bit (MMX, SSE), 256bit (AVX, AVX2) or even 512bit (AVX512) so respectively 2, 4 and 8 64bit numbers in one go. Of course those instruction sets can do much more than just adding numbers. Is it all that perfect? Can our software run 8 times faster on CPU supporting AVX512? It's not that simple:
    * SIMD instructions shine mostly in applications processing huge amount of **numerical** data
-   * data needs to be aligned (so for example not applicable to Packet Descriptors placed back to back or packed from [previous posts](/blog/shrinking-structure-part1))
+   * data needs to be aligned (so for example not applicable to Packet Descriptorsfrom [previous posts](/blog/shrinking-structure-part1), which were placed back to back or packed)
    * doesn't work well with branches (so if's). Can accelerate matrix multiplication, but not that much file compressor, which usually requires a lot of branches
    * not directly supported by standard C++ - requires specific data types (__m512i, __m256i, __m128i etc.) and intrinsics (_mm256_add_pd, _mm_add_epi16 etc.)
    * can cause CPU clock to drop by almost 40%!!!
 
 This article will focus on latest problem.
 
-##
-As it turns out when using AVX2 and AVX512 extensions CPU clock can go down by few hundreds MHz. Apparently most powerful vector instructions uses so many transistors and draws so much power, that CPU needs to lower clock to keep within its TDP (thermal design power). While internal details are complex and not fully available outside Intel labs few things are known. Not every AVX2/AVX512 instruction has this limitation, there are some that can be executed at full speed indefinitely. And even when executing instructions which causes CPU clock throttling, it is not enough to run single instruction.
+## AVX and CPU frequency
+As it turns out when using AVX2 and AVX512 extensions CPU clock can go down by few hundreds MHz. Apparently most powerful vector instructions lits regions of silicon in CPU that are usually not powered and draws so much power, that CPU needs to lower clock to keep within its TDP (thermal design power). While internal details are complex and not fully available outside Intel labs few things are known. Not every AVX2/AVX512 instruction has this limitation, there are some that can be executed at full speed indefinitely. And even when executing instructions which causes CPU clock throttling, it is not enough to run single instruction. More details can be found in [Daniel Lemire's blogpost](https://lemire.me/blog/2018/09/07/avx-512-when-and-how-to-use-these-new-instructions/). Degree of throttling is specified in CPU documentation and impacts also Turbo frequencies. Here are examples for two medium-range server CPUs:
+[Xeon Gold 6148 (Skylake)](https://en.wikichip.org/wiki/intel/xeon_gold/6148#Frequencies):
+<p align="center">
+<img src="/assets/images/2020-01-24-AVX-throttling/6148">
+</p>
+
+[Xeon Gold 6248 (Cascade Lake)](https://en.wikichip.org/wiki/intel/xeon_gold/6248#Frequencies):
+<p align="center">
+<img src="/assets/images/2020-01-24-AVX-throttling/6248">
+</p>
+At least since Skylake CPU clock is set for each core separately, so if one physical core is throttled it will not affect other physical cores. Of course logical cores aka. HyperThreading cores will be affected hence the ideas like [AVX aware schedulers](https://arxiv.org/pdf/1901.04982.pdf) and [tracking AVX usage in Linux kernel](https://www.phoronix.com/scan.php?page=news_item&px=Linux-5.3-x86-Core-Track-AVX512).
+
+## Practical implications
+To check if AVX throttling can impact performance we need to benchmark mixed workload, containing some AVX/AVX512 instructions but also "regular" instructions and compare it with the same algorithm but implemented using just "regular" instructions.
 
 
 
