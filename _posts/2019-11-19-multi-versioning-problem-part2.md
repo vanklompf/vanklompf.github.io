@@ -161,7 +161,7 @@ This is good, but not perfect. It requires moving entire fragments of code (not 
 
 ### GCC9 to the rescue
 <p align="center">
-<img src="http://www.clker.com/cliparts/x/i/K/f/n/q/super-hero-red-cape.svg" width="200">
+<img src="/assets/images/2019-11-11-multi-versioning-problem/super-hero-red-cape.svg" width="200">
 </p>
 Remember that idea with [doing multi-versioning for entire loop](#multi-versioning-of-outer-loop)? So far I was using `gcc7`, but apparently it works fine in `gcc9`! Finally there is resolver for function with loop, where proper version is selected and run. Check this [Godbolt output](https://godbolt.org/z/EjpAzx). And results:
 ```
