@@ -10,7 +10,7 @@ tags:
   - glibc
   
 ---
-## What exactly is AVX
+## SIMD instruction
 Modern CPUs contain so-called vector extensions or SIMD instructions. SIMD stands for Single Instruction Multiple Data. For `x86-64` CPUs example of such instructions would be (in historical order): `MMX`, `SSE`, `SSE2`, `SSE3`, `SSSE3`, `SSE4`, `SSE4.2` and most modern additions to the family: `AVX`, `AVX2`, `AVX512`. The idea behind those extensions is the possibility to process multiple inputs or vector of data in a single operation. This kind of processing is very useful in numerical computations, computer graphics, neural networks. All applications which are doing repetitive mathematical operations over a big set of data like matrices or pixel streams. Regular non-vector `x86-64` instructions usually take 64bit input operands so, for example, can add 64bit numbers using a single instruction. Vector extensions allow to increase that to 128bit (`SSE`), 256bit (`AVX`, `AVX2`) or even 512bit (`AVX512`) so respectively 2, 4 and 8 64bit numbers in one go. Few examples below:
 
 ```cpp
