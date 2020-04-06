@@ -1,5 +1,5 @@
 ---
-title: "Avx throttling (Part I)"
+title: "Avx throttling (Part I) - UPDATED"
 date: 2020-04-05
 categories:
   - blog
@@ -111,3 +111,30 @@ Vectorization can be a powerful performance improving tool, but sometimes this c
 In the next part, I will try to check how bad `Level2` throttling can be and show how things can get even worse with glibc interactions.
 
 All code used to write this article can be found, as usual [on my GitHub](https://github.com/vanklompf/BlogSrc/tree/master/AvxThrottle/).
+
+## Update
+After bit of critique and bit of suggestions [from redditors](https://www.reddit.com/r/programming/comments/fvmhm4/avx2512_throttling_of_intel_cpus_on_a_practical/) I have applied few modifications to original code. It seems that code was barely vectorized and throttling completely diminished performance benefits. Proposed modifications:
+   * use `-ffast-math` which allows compiler to use faster but slightly less accurate FP math
+   * do not align `Point struct` as  it may cause memory layout problems for compiler
+   * use `gcc9.3` instead of gcc9.2, as it apparently better handles AVX vectorization (not done, apparently `gcc9.3` is not that trivial to get for Ubuntu 18.04)
+   * use intrinsics (that would kind of miss the point, throttling would be more expected there)
+   
+New set of results:
+
+| Variant | baseline | fast-math | no align | fast-math + no align |
+|:--------|:--------:|:---------:|:--------:|:--------------------:|
+| x86-64  | 16518    | 4997      | 16259    | 10954                |
+| AVX     | 16487    | 7421      | 16244    | 10954                |
+| AVX2    | 16528    | 7319      | 16235    | 3431                 |
+| AVX512  | 19856    | 3958      | 19441    | **2468**             |
+
+Throttling (for fast-math + no align):
+
+| Variant | lvl1        | lvl2       | throttle |
+|:--------|:-----------:|:----------:|:--------:|
+| x86-64  | 0           | 0          | 1197     |
+| AVX     | 0           | 0          | 1812     |
+| AVX2    | 0           | 0          | 0        |
+| AVX512  | 1820071177  | 3743676850 | 322877   |
+
+So even though there is fair share of Level2 throttling, AVX-512 can be fastest out of all implementations. This shows that with proper aproach it can boost performance, but on the other hand when relying on compiler vectorization it is not that easy to do it right. If compiler can silently put "expensive" instructions here and there, giving no benefit, and some throttling than this is something to be aware of. And it is not AVX to blame, but rather way how interactions between compiler and hardware can cause performance issues.
