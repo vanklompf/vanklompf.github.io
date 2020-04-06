@@ -110,7 +110,8 @@ It is visible how `AVX512` implementation of our algorithm triggered `Level1` an
 Vectorization can be a powerful performance improving tool, but sometimes this comes with a cost. For `AVX512` this cost can be surprisingly high and in my projects, I will be much more careful using it. Except for some very specific, narrow use cases, `AVX2` or even `AVX` can provide similar vectorization improvements, while not downclocking CPU and crippling its performance. For now, disabling `AVX512` compilation flags by default and enabling those only for specific functions seems like a reasonable solution.
 In the next part, I will try to check how bad `Level2` throttling can be and show how things can get even worse with glibc interactions.
 
-All code used to write this article can be found, as usual [on my GitHub](https://github.com/vanklompf/BlogSrc/tree/master/AvxThrottle/).
+All code used to write this article can be found, as usual [on my GitHub](https://github.com/vanklompf/BlogSrc/tree/master/AvxThrottle/). Compiler used was `gcc-9.3` and CPU [Xeon Gold 6148](https://ark.intel.com/content/www/us/en/ark/products/120489/intel-xeon-gold-6148-processor-27-5m-cache-2-40-ghz.html).
+
 
 ## Update
 After bit of critique and bit of suggestions [from redditors](https://www.reddit.com/r/programming/comments/fvmhm4/avx2512_throttling_of_intel_cpus_on_a_practical/) I have applied few modifications to original code. It seems that code was barely vectorized and throttling completely diminished performance benefits. Proposed modifications:
