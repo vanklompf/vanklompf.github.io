@@ -99,7 +99,7 @@ This greatly reduces the need for code duplication or workarounds using inlined 
 
 ## Some details under the hood
 <p align="center">
-<img src="/assets/images/2020-07-27-migrating-multiversioning/under_the_hood.jpg">
+<img src="/assets/images/2020-07-27-migrating-multiversioning/under_the_hood.jpg" width="200">
 </p>
 Details behind dropping requirement for applying multi-versioning to declarations is quite interesting. It seems that `resolver` (function that selects and calls proper version of code based on runtime CPU properties) is now generated under signature of multi-versioned function itself. External code sees only single resolver function and is completely not aware of multi-versioning. As [seen in Godbolt](https://godbolt.org/z/bnv3qd) new-style multi-versioning generates `resolver` before function is even used:
 <p align="center">
@@ -116,7 +116,7 @@ jmp     _Z10sum(unsigned int const*, int)PKji
 ```
 This probably breaks linking with code from other compilers when the multi-versioned function is exported, but I haven't checked that.
 
-## How to?
+## How-to
 As a summary, here are simple steps how to migrate from old to new multi-versioning
 1. Reduce all copies of multi-versioned function with `target` attribute into one, with `target_clones` attribute.
 2. Remove all workarounds with an inlined body of a function
