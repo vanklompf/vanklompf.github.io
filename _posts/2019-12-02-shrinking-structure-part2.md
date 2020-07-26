@@ -106,12 +106,12 @@ Using all described techniques I was able to reduce the size of structure from 4
 
 Below is a summary of results for all size reduction method presented in both articles. Additionally I have added "trivial" processing where only accessed field is `size`. This one should benefit the most form size reduction, as unpacking data is limited to a minimum.
 Full results looks like that:
-#### Xeon Gold 6148
+#### Server
 <p align="center">
 <img src="/assets/images/2019-10-25-shrinking-structure/mpps_chart_skylake2.png" width="800">
 </p>
 
-#### Intel i5-7500
+#### Desktop
 <p align="center">
 <img src="/assets/images/2019-10-25-shrinking-structure/mpps_chart_desktop2.png" width="800">
 </p>
