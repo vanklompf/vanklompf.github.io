@@ -1,6 +1,5 @@
 ---
 title: "Old and new function multi-versioning"
-published: false
 date: 2020-07-27
 categories:
   - blog
