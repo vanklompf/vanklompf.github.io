@@ -1,6 +1,7 @@
 ---
 title: "Avx throttling (Part I) - UPDATED"
 date: 2020-04-05
+toc: true
 categories:
   - blog
 tags:

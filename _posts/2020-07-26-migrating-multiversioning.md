@@ -1,6 +1,7 @@
 ---
 title: "Old and new function multi-versioning"
 date: 2020-07-27
+toc: true
 categories:
   - blog
 tags:
@@ -11,6 +12,10 @@ tags:
 
 I have been touching multi-versioning already in two previous articles: [Part I](/blog/multi-versioning-problem/), [Part II](/blog/multi-versioning-problem-part2/) but I wanted to return to this topic once more (and probably not for the last time).
 Multi-versioning feature is available in GCC for quite some time, it has appeared in GCC4.8 but went some refinement in GCC6. In this short post, I will show what has changed and how to migrate from old to a new version. New compilers support both versions so migration is optional, although it makes life much easier.
+
+<p align="center">
+<img src="/assets/images/2020-07-27-migrating-multiversioning/multi-path-fibers.jpeg">
+</p>
 
 ## The Old
 Multi-versioning was implemented as function attribute, where for every separate specialization, function body had to be explicitely defined. So in case of targeting code to 3 different CPU architectures, function would have to be defined 3 times (`default` specialization is obligatory in both old and new implementations of multi-versioning and code will not compile when it is missing.):
@@ -101,7 +106,7 @@ This greatly reduces the need for code duplication or workarounds using inlined 
 <p align="center">
 <img src="/assets/images/2020-07-27-migrating-multiversioning/under_the_hood.jpg" width="200">
 </p>
-Details behind dropping requirement for applying multi-versioning to declarations is quite interesting. It seems that `resolver` (function that selects and calls proper version of code based on runtime CPU properties) is now generated under signature of multi-versioned function itself. External code sees only single resolver function and is completely not aware of multi-versioning. As [seen in Godbolt](https://godbolt.org/z/bnv3qd) new-style multi-versioning generates `resolver` before function is even used:
+Details behind dropping requirement for applying multi-versioning to declarations is quite interesting. It seems that `resolver` (function that selects and calls proper version of code, based on CPU properties detected in runtime) is now generated under signature of multi-versioned function itself. External code sees only single resolver function and is completely not aware of multi-versioning. As [seen in Godbolt](https://godbolt.org/z/bnv3qd) new-style multi-versioning generates `resolver` before function is even used:
 <p align="center">
 <img src="/assets/images/2020-07-27-migrating-multiversioning/godbold_new.png">
 </p>
