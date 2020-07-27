@@ -126,3 +126,7 @@ As a summary, here are simple steps how to migrate from old to new multi-version
 1. Reduce all copies of multi-versioned function with `target` attribute into one, with `target_clones` attribute.
 2. Remove all workarounds with an inlined body of a function
 3. Remove any reference to multi-versioning from function declarations
+
+## Update
+There was really interesting comment on Reddit from `u/erichkeane`. Definitely ([worth reading](https://www.reddit.com/r/cpp/comments/hyfhy3/differences_between_old_pre_gcc6_and_newstyle/fzcw2hh?utm_source=share&utm_medium=web2x)).
+
