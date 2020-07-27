@@ -128,5 +128,5 @@ As a summary, here are simple steps how to migrate from old to new multi-version
 3. Remove any reference to multi-versioning from function declarations
 
 ## Update
-There was really interesting comment on Reddit from `u/erichkeane`. Definitely ([worth reading](https://www.reddit.com/r/cpp/comments/hyfhy3/differences_between_old_pre_gcc6_and_newstyle/fzcw2hh?utm_source=share&utm_medium=web2x)).
+There was really interesting comment on Reddit from `u/erichkeane`. Definitely [worth reading](https://www.reddit.com/r/cpp/comments/hyfhy3/differences_between_old_pre_gcc6_and_newstyle/fzcw2hh?utm_source=share&utm_medium=web2x).
 
